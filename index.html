@@ -364,4 +364,1693 @@
 <!-- Unlocked Modals -->
 <div id="modal-unlocked" class="modal-overlay">
     <div class="modal">
-        <h2 style="color: var(--secondary)">New Pigeon Found!</
+        <h2 style="color: var(--secondary)">New Pigeon Found!</h2>
+        <div id="preview-single-container" style="width: 100%; background: radial-gradient(circle, #334155 0%, #0f172a 100%); border-radius: 12px; padding: 20px 0; display:flex; justify-content:center;"></div>
+        <h3 id="unlocked-name" style="margin: 10px 0; font-size: 1.8rem;">???</h3>
+        <p id="unlocked-desc">You got a new miner.</p>
+        <button class="modal-close" style="background:#22c55e" onclick="ui.closeModal('modal-unlocked'); ui.openInventory();">Open Squad</button>
+    </div>
+</div>
+
+<div id="modal-unlocked-multi" class="modal-overlay">
+    <div class="modal" style="max-width: 95%;">
+        <h2 id="unlocked-multi-title-post" style="color: var(--secondary)">Pigeons Unlocked!</h2>
+        <div id="preview-multi-container" style="width: 100%; background: radial-gradient(circle, #334155 0%, #0f172a 100%); border-radius: 12px; padding: 20px 0; display:flex; justify-content:center; flex-wrap:wrap; gap:10px; max-height: 40vh; overflow-y: auto;"></div>
+        <div id="unlocked-multi-names" style="font-size: 0.9rem; font-weight:bold; margin-top: 15px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px;"></div>
+        <button class="modal-close" style="background:#22c55e; margin-top: 15px;" onclick="ui.closeModal('modal-unlocked-multi'); ui.openInventory();">Open Squad</button>
+    </div>
+</div>
+
+<!-- Saves -->
+<div id="modal-saves" class="modal-overlay">
+    <div class="modal">
+        <h2>Save Slots</h2>
+        <div id="save-slots-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+        <div style="display:flex; gap:10px; margin-top: 15px;">
+            <button class="btn-sell-big" style="flex:1; font-size:1rem; padding:10px; background:linear-gradient(145deg, #3b82f6, #2563eb); border-color:#60a5fa;" onclick="game.exportSave()">Export</button>
+            <button class="btn-sell-big" style="flex:1; font-size:1rem; padding:10px; background:linear-gradient(145deg, #10b981, #059669); border-color:#34d399;" onclick="game.importSave()">Import</button>
+        </div>
+        <button class="modal-close" onclick="ui.closeModal('modal-saves')">Close</button>
+    </div>
+</div>
+
+<!-- Offline -->
+<div id="modal-offline" class="modal-overlay">
+    <div class="modal">
+        <h2 style="color: var(--primary)">Welcome Back!</h2>
+        <p>Your pigeons kept working while you were away!</p>
+        <p id="offline-stats" style="font-weight:bold; font-size:1.1rem; color:var(--secondary); line-height: 1.6;"></p>
+        <button class="modal-close" style="background:#22c55e" onclick="ui.closeModal('modal-offline')">Awesome!</button>
+    </div>
+</div>
+
+<script>
+    // --- GAME CONFIG & DATA ---
+    const RARITY_MULTIPLIERS = {
+        'common': 1, 'rare': 2, 'epic': 5, 'legendary': 15, 'mythic': 50, 'secret': 250, 'silent': 1000
+    };
+
+    const PIGEON_TYPES = {
+        base: { id: 'base', name: 'Basic Pigeon', rarity: 'common', chance: 0, color: 'rarity-common', cost: 0, iconUrl: '' },
+        hat: { id: 'hat', name: 'Hat Pigeon', rarity: 'common', chance: 20, color: 'rarity-common', cost: 1000000, iconUrl: '' },
+        cool: { id: 'cool', name: 'Cool Pigeon', rarity: 'common', chance: 20, color: 'rarity-common', cost: 1000000, iconUrl: '' },
+        chef: { id: 'chef', name: 'Chef Pigeon', rarity: 'rare', chance: 15, color: 'rarity-rare', cost: 5000000, iconUrl: '' },
+        car: { id: 'car', name: 'Car Pigeon', rarity: 'rare', chance: 10, color: 'rarity-rare', cost: 10000000, iconUrl: '' },
+        cat: { id: 'cat', name: 'Cat Pigeon', rarity: 'rare', chance: 10, color: 'rarity-rare', cost: 10000000, iconUrl: '' },
+        pirate: { id: 'pirate', name: 'Pirate Pigeon', rarity: 'rare', chance: 10, color: 'rarity-rare', cost: 10000000, iconUrl: '' },
+        wolf: { id: 'wolf', name: 'Wolf Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        super: { id: 'super', name: 'Super Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        robot: { id: 'robot', name: 'Robot Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        ninja: { id: 'ninja', name: 'Ninja Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        wizard: { id: 'wizard', name: 'Wizard Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        cyborg: { id: 'cyborg', name: 'Cyborg Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        zombie: { id: 'zombie', name: 'Zombie Pigeon', rarity: 'epic', chance: 3.0, color: 'rarity-epic', cost: 100000000, iconUrl: '' },
+        demon: { id: 'demon', name: 'Demon Pigeon', rarity: 'epic', chance: 2.0, color: 'rarity-epic', cost: 250000000, iconUrl: '' },
+        worm: { id: 'worm', name: 'Realistic Worm', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        ghost: { id: 'ghost', name: 'Ghost Pigeon', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        astronaut: { id: 'astronaut', name: 'Astro Pigeon', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        alien: { id: 'alien', name: 'Alien Pigeon', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        vampire: { id: 'vampire', name: 'Vamp Pigeon', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        diamond: { id: 'diamond', name: 'Diamond Pigeon', rarity: 'legendary', chance: 1.5, color: 'rarity-legendary', cost: 1000000000, iconUrl: '' },
+        mecha_dog: { id: 'mecha_dog', name: 'Mecha Dog', rarity: 'legendary', chance: 1.0, color: 'rarity-legendary', cost: 2000000000, iconUrl: '' },
+        waffle: { id: 'waffle', name: 'Waffle Pigeon', rarity: 'mythic', chance: 0.8, color: 'rarity-mythic', cost: 40000000000, iconUrl: '' },
+        golden: { id: 'golden', name: 'Golden Pigeon', rarity: 'mythic', chance: 0.6, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        king: { id: 'king', name: 'King Pigeon', rarity: 'mythic', chance: 0.6, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        dragon: { id: 'dragon', name: 'Dragon Pigeon', rarity: 'mythic', chance: 0.6, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        angel: { id: 'angel', name: 'Angel Pigeon', rarity: 'mythic', chance: 0.6, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        rainbow: { id: 'rainbow', name: 'Rainbow Pigeon', rarity: 'mythic', chance: 0.5, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        neon: { id: 'neon', name: 'Neon Pigeon', rarity: 'mythic', chance: 0.4, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        time_traveler: { id: 'time_traveler', name: 'Chrono Pigeon', rarity: 'mythic', chance: 0.3, color: 'rarity-mythic', cost: 80000000000, iconUrl: '' },
+        glitch: { id: 'glitch', name: 'Glitch Pigeon', rarity: 'mythic', chance: 0.1, color: 'rarity-mythic', cost: 50000000000, iconUrl: '' },
+        dino: { id: 'dino', name: 'Super Dino', rarity: 'secret', chance: 0.05, color: 'rarity-secret', cost: 500000000000, iconUrl: '' },
+        dragon_wolf: { id: 'dragon_wolf', name: 'Dragon Wolf', rarity: 'secret', chance: 0.05, color: 'rarity-secret', cost: 500000000000, iconUrl: '' },
+        fire: { id: 'fire', name: 'Fire Pigeon', rarity: 'secret', chance: 0.05, color: 'rarity-secret', cost: 500000000000, iconUrl: '' },
+        pixel: { id: 'pixel', name: 'Pixel Pigeon', rarity: 'secret', chance: 0.05, color: 'rarity-secret', cost: 500000000000, iconUrl: '' },
+        void: { id: 'void', name: 'Void Pigeon', rarity: 'secret', chance: 0.05, color: 'rarity-secret', cost: 500000000000, iconUrl: '' },
+        space_dog: { id: 'space_dog', name: 'Space Dog', rarity: 'silent', chance: 0.01, color: 'rarity-silent', cost: 5000000000000, iconUrl: '' },
+        godly_fire: { id: 'godly_fire', name: 'Godly Fire', rarity: 'silent', chance: 0.01, color: 'rarity-silent', cost: 5000000000000, iconUrl: '' },
+        ozzy: { id: 'ozzy', name: 'Ozzy Dog', rarity: 'silent', chance: 0.01, color: 'rarity-silent', cost: 5000000000000, iconUrl: '' },
+        pepper: { id: 'pepper', name: 'Pepper Dog', rarity: 'silent', chance: 0.01, color: 'rarity-silent', cost: 5000000000000, iconUrl: '' },
+        quantum: { id: 'quantum', name: 'Quantum Pigeon', rarity: 'silent', chance: 0.01, color: 'rarity-silent', cost: 5000000000000, iconUrl: '' },
+        worca: { id: 'worca', name: 'Worca (Wolf-Orca)', rarity: 'silent', chance: 0.00001, color: 'rarity-silent', cost: Number.MAX_SAFE_INTEGER, iconUrl: '' }
+    };
+
+    const MINES = [
+        { name: "Diamond Mine", rockColor: 0x475569, crystalColor: 0x38bdf8, multiplier: 1, unlockCost: 0 },
+        { name: "Ruby Mine", rockColor: 0x2d3748, crystalColor: 0xf43f5e, multiplier: 5, unlockCost: 100000 },
+        { name: "Emerald Mine", rockColor: 0x1a202c, crystalColor: 0x10b981, multiplier: 25, unlockCost: 2500000 },
+        { name: "Amethyst Mine", rockColor: 0x1e1b4b, crystalColor: 0xa855f7, multiplier: 100, unlockCost: 50000000 },
+        { name: "Obsidian Mine", rockColor: 0x111111, crystalColor: 0xf97316, multiplier: 500, unlockCost: 1000000000 },
+        { name: "Cosmic Mine", rockColor: 0x0f172a, crystalColor: 0xffffff, multiplier: 2500, unlockCost: 50000000000 },
+    ];
+
+    const GAME_STATE = {
+        bread: 0, diamonds: 0, digSpeed: 1, autoSpeed: 0, factoryLevel: 0,
+        upgradeCost: 1000, autoCost: 5000, factoryCost: 50000, boxCost: 5000,
+        currentMine: 0, 
+        inventory: { 'base': 1 }, 
+        equipped: ['base'],
+        sellRate: 2, lastSaveTime: null, combo: 0, lastClickTime: 0
+    };
+
+    let CURRENT_SLOT = 1;
+    let isSpinning = false;
+
+    // --- THREE.JS ENGINE ---
+    const engine = {
+        scene: null, camera: null, renderer: null, pigeonGroups: [],
+        mineBlock: null, particles: [], isAnimatingMine: false, mineAnimationProgress: 0, clock: new THREE.Clock(),
+        textureCache: {}, fireCanvas: null, fireCtx: null, fireTex: null,
+
+        init: function() {
+            try {
+                const container = document.getElementById('game-canvas');
+                let w = window.innerWidth || window.screen.width;
+                let h = window.innerHeight || window.screen.height;
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(w, h);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0)); // Higher res
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer realistic shadows
+                container.appendChild(this.renderer.domElement);
+
+                this.preloadIcons(function() {
+                    engine.scene = new THREE.Scene();
+                    engine.scene.background = new THREE.Color(0x87CEEB);
+                    engine.scene.fog = new THREE.FogExp2(0x87CEEB, 0.02);
+
+                    engine.camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 100);
+                    engine.camera.position.set(0, 4, 8);
+                    engine.camera.lookAt(0, 1, 0);
+
+                    engine.setupLighting();
+                    engine.setupEnvironment();
+                    engine.buildMine(GAME_STATE.currentMine);
+                    engine.loadSquad(GAME_STATE.equipped);
+
+                    window.addEventListener('resize', engine.onWindowResize.bind(engine));
+                    setTimeout(function(){ engine.onWindowResize(); }, 300);
+
+                    const raycaster = new THREE.Raycaster();
+                    const mouse = new THREE.Vector2();
+
+                    const catcher = document.getElementById('touch-catcher');
+                    const handleTap = function(e) {
+                        if(isSpinning) return;
+                        e.preventDefault();
+
+                        let clientX = e.clientX, clientY = e.clientY;
+                        if(e.changedTouches && e.changedTouches.length > 0) {
+                            clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
+                        } else if(e.type.startsWith('touch')) { return; }
+
+                        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+                        raycaster.setFromCamera(mouse, engine.camera);
+                        const intersects = raycaster.intersectObject(engine.mineBlock, true);
+                        if (intersects.length > 0 || (mouse.y > -0.3 && mouse.y < 0.6)) {
+                            game.mine(clientX, clientY);
+                        }
+                    };
+
+                    catcher.addEventListener('pointerdown', handleTap);
+                    catcher.addEventListener('touchstart', handleTap, {passive: false});
+
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('ui-layer').style.display = 'flex';
+                    document.getElementById('mine-hint').style.display = 'block';
+
+                    animateLoop();
+
+                    if (window.Android && window.Android.onGameReady) window.Android.onGameReady();
+                });
+            } catch(err) {
+                console.error("Engine Init Error: ", err);
+                document.getElementById('loading-screen').innerHTML = "<h2 style='color:red'>Graphics Error: " + err.message + "</h2>";
+            }
+        },
+
+        preloadIcons: function(callback) {
+            const iconScene = new THREE.Scene();
+            const iconCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+            iconCamera.position.set(0, 0.6, 2.8);
+            iconCamera.lookAt(0, 0.2, 0);
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.8);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+            dir.position.set(5, 5, 5);
+            iconScene.add(amb, dir);
+
+            const keys = Object.keys(PIGEON_TYPES).filter(function(k) { return k !== 'base'; });
+            let index = 0;
+            const _this = this;
+
+            const origW = window.innerWidth || window.screen.width;
+            const origH = window.innerHeight || window.screen.height;
+            _this.renderer.setSize(256, 256);
+
+            function processNext() {
+                if (index >= keys.length) {
+                    _this.renderer.setSize(origW, origH);
+                    callback();
+                    return;
+                }
+
+                const key = keys[index];
+                try {
+                    const p = _this.createPigeon(key);
+                    p.position.set(0, -0.3, 0);
+                    p.rotation.y = Math.PI + Math.PI / 8;
+                    
+                    if(key === 'dino') { p.scale.set(0.6, 0.6, 0.6); p.position.y = -0.6; } // Scale down dino for icon
+                    if(key === 'worca') { p.scale.set(0.8, 0.8, 0.8); p.position.y = -0.5; } 
+
+                    iconScene.add(p);
+                    _this.renderer.render(iconScene, iconCamera);
+                    PIGEON_TYPES[key].iconUrl = _this.renderer.domElement.toDataURL('image/png');
+                    
+                    iconScene.remove(p);
+                    _this.disposeHierarchy(p);
+                } catch(e) {}
+
+                index++;
+                document.getElementById('loading-bar').style.width = ((index / keys.length) * 100) + '%';
+                setTimeout(processNext, 5);
+            }
+            processNext();
+        },
+
+        setupLighting: function() {
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            this.scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(8, 15, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.top = 15; dirLight.shadow.camera.bottom = -15;
+            dirLight.shadow.camera.left = -15; dirLight.shadow.camera.right = 15;
+            dirLight.shadow.bias = -0.0005;
+            this.scene.add(dirLight);
+        },
+
+        setupEnvironment: function() {
+            const groundGeo = new THREE.PlaneGeometry(80, 80);
+            const groundTex = this.generateTexture('#2d1c10', '#1a1008');
+            const groundMat = new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.9, metalness: 0 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+            this.scene.add(ground);
+
+            const rockGeo = new THREE.DodecahedronGeometry(0.5);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9, metalness: 0.2 });
+            for(let i=0; i<20; i++) {
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                rock.position.set((Math.random() - 0.5) * 30, 0, (Math.random() - 0.5) * 30);
+                rock.rotation.set(Math.random(), Math.random(), Math.random());
+                rock.scale.setScalar(Math.random() * 0.8 + 0.2);
+                rock.castShadow = true;
+                this.scene.add(rock);
+            }
+        },
+
+        buildMine: function(mineIndex = 0) {
+            if (this.mineBlock) this.scene.remove(this.mineBlock);
+            const mineData = MINES[mineIndex];
+            this.mineBlock = new THREE.Group();
+
+            const geo = new THREE.DodecahedronGeometry(1.5, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: mineData.rockColor, roughness: 0.7, metalness: 0.3, flatShading: true });
+
+            const baseRock = new THREE.Mesh(geo, mat);
+            baseRock.castShadow = true; baseRock.receiveShadow = true; baseRock.position.y = 1;
+            this.mineBlock.add(baseRock);
+
+            const crystalGeo = new THREE.ConeGeometry(0.4, 1.5, 4);
+            const crystalMat = new THREE.MeshStandardMaterial({
+                color: mineData.crystalColor, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.9, flatShading: true
+            });
+
+            for(let i=0; i<8; i++) {
+                const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+                crystal.position.set((Math.random() - 0.5) * 1.5, 1 + Math.random(), (Math.random() - 0.5) * 1.5);
+                crystal.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                this.mineBlock.add(crystal);
+            }
+            this.mineBlock.position.set(0, 0, -2.5);
+            this.scene.add(this.mineBlock);
+        },
+
+        generateTexture: function(baseColor, accentColor, format = 'normal') {
+            const key = baseColor + accentColor + format;
+            if (this.textureCache[key]) return this.textureCache[key];
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 256, 256);
+
+            for(let i = 0; i < 1500; i++) {
+                ctx.fillStyle = accentColor; ctx.globalAlpha = Math.random() * 0.3;
+                const x = Math.random() * 256; const y = Math.random() * 256;
+
+                if (format === 'worm') {
+                    ctx.beginPath(); ctx.ellipse(x, y, Math.random() * 20 + 10, Math.random() * 2 + 1, 0, 0, Math.PI * 2); ctx.fill();
+                } else if (format === 'curly') {
+                    ctx.beginPath(); ctx.arc(x, y, Math.random() * 4 + 2, 0, Math.PI * 2); ctx.stroke();
+                } else {
+                    ctx.beginPath(); ctx.ellipse(x, y, Math.random() * 8 + 4, Math.random() * 3 + 1, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(format === 'worm' ? 1 : 2, format === 'worm' ? 1 : 2);
+            this.textureCache[key] = texture;
+            return texture;
+        },
+
+        generateWorcaTexture: function() {
+            if(this.textureCache['worca']) return this.textureCache['worca'];
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#111'; ctx.fillRect(0,0,256,140);
+            ctx.fillStyle = '#eee'; ctx.fillRect(0,140,256,116);
+            // Add some realistic skin noise
+            for(let i=0; i<1000; i++){
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            this.textureCache['worca'] = tex; return tex;
+        },
+
+        generateGlitchTexture: function() {
+            if (this.textureCache['glitch']) return this.textureCache['glitch'];
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            for(let x=0; x<64; x+=4) {
+                for(let y=0; y<64; y+=4) {
+                    ctx.fillStyle = `rgb(${Math.random()*255}, ${Math.random()*255}, ${Math.random()*255})`;
+                    ctx.fillRect(x,y,4,4);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            this.textureCache['glitch'] = texture;
+            return texture;
+        },
+
+        generateRainbowTexture: function() {
+            if (this.textureCache['rainbow']) return this.textureCache['rainbow'];
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0,0,256,256);
+            grad.addColorStop(0, "#ff0000"); grad.addColorStop(0.2, "#ff7f00");
+            grad.addColorStop(0.4, "#ffff00"); grad.addColorStop(0.6, "#00ff00");
+            grad.addColorStop(0.8, "#0000ff"); grad.addColorStop(1, "#8b00ff");
+            ctx.fillStyle = grad; ctx.fillRect(0,0,256,256);
+            const texture = new THREE.CanvasTexture(canvas);
+            this.textureCache['rainbow'] = texture; return texture;
+        },
+
+        generateQuantumTexture: function() {
+            if (this.textureCache['quantum']) return this.textureCache['quantum'];
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#05001a"; ctx.fillRect(0,0,256,256);
+            for(let i=0; i<200; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#00ffff';
+                ctx.beginPath(); ctx.arc(Math.random()*256, Math.random()*256, Math.random()*2, 0, Math.PI*2); ctx.fill();
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            this.textureCache['quantum'] = texture; return texture;
+        },
+
+        generateNeonTexture: function() {
+            if (this.textureCache['neon']) return this.textureCache['neon'];
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#111"; ctx.fillRect(0,0,128,128); ctx.lineWidth = 4;
+            for(let i=0; i<10; i++) {
+                ctx.strokeStyle = `hsl(${Math.random()*360}, 100%, 50%)`;
+                ctx.beginPath(); ctx.moveTo(Math.random()*128, Math.random()*128); ctx.lineTo(Math.random()*128, Math.random()*128); ctx.stroke();
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            this.textureCache['neon'] = texture; return texture;
+        },
+
+        updateFireTexture: function() {
+            if (!this.fireCanvas) {
+                this.fireCanvas = document.createElement('canvas'); this.fireCanvas.width = 64; this.fireCanvas.height = 64;
+                this.fireCtx = this.fireCanvas.getContext('2d'); this.fireTex = new THREE.CanvasTexture(this.fireCanvas);
+            }
+            const ctx = this.fireCtx;
+            ctx.fillStyle = 'rgba(255, 30, 0, 0.2)'; ctx.fillRect(0,0,64,64);
+            for(let i=0; i<10; i++) {
+                ctx.fillStyle = ['#ff2200', '#ff8800', '#ffff00'][Math.floor(Math.random()*3)];
+                ctx.beginPath(); ctx.arc(Math.random()*64, Math.random()*64, Math.random()*8 + 3, 0, Math.PI*2); ctx.fill();
+            }
+            this.fireTex.needsUpdate = true;
+            return this.fireTex;
+        },
+
+        addFace: function(headObject, matEye, matBeak) {
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye1.position.set(0.15, 0.05, 0.25);
+            const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye2.position.set(-0.15, 0.05, 0.25);
+            const beak = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 16), matBeak); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0, 0.3);
+            headObject.add(eye1, eye2, beak);
+        },
+
+        addEyesOnly: function(headObject, matEye) {
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye1.position.set(0.15, 0.1, 0.2);
+            const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye2.position.set(-0.15, 0.1, 0.2);
+            headObject.add(eye1, eye2);
+        },
+
+        createPigeon: function(type) {
+            const pigeonGroup = new THREE.Group();
+            
+            const texGrey = this.generateTexture('#9ca3af', '#4b5563');
+            const texDarkGrey = this.generateTexture('#222222', '#000000');
+            const texPink = this.generateTexture('#f472b6', '#be185d', 'worm');
+            const texAlien = this.generateTexture('#22c55e', '#16a34a');
+            const texDragon = this.generateTexture('#ef4444', '#b91c1c');
+            const texZombie = this.generateTexture('#166534', '#14532d');
+            const texOzzy = this.generateTexture('#fdf8f5', '#fde68a'); // Fluffy white/golden
+            const texPepper = this.generateTexture('#3f271d', '#291913', 'curly');
+            const texDemon = this.generateTexture('#7f1d1d', '#450a0a');
+            const texChrono = this.generateTexture('#b45309', '#d97706');
+            const texDino = this.generateTexture('#15803d', '#14532d');
+
+            const matGrey = new THREE.MeshStandardMaterial({ map: texGrey, roughness: 0.9, metalness: 0.1 });
+            const matDarkGrey = new THREE.MeshStandardMaterial({ map: texDarkGrey, roughness: 0.9, metalness: 0.1 });
+            const matBeak = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
+            const matEye = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.8 });
+            const matPink = new THREE.MeshStandardMaterial({ map: texPink, roughness: 0.6, metalness: 0.1 });
+            const matGold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2, metalness: 1.0 });
+            const matAlien = new THREE.MeshStandardMaterial({ map: texAlien, roughness: 0.5 });
+            const matDragon = new THREE.MeshStandardMaterial({ map: texDragon, roughness: 0.8, metalness: 0.3 });
+            const matWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            const matGlitch = new THREE.MeshStandardMaterial({ map: this.generateGlitchTexture(), emissive: 0x222222 });
+            const matZombie = new THREE.MeshStandardMaterial({ map: texZombie, roughness: 1.0 });
+            const matRainbow = new THREE.MeshStandardMaterial({ map: this.generateRainbowTexture(), roughness: 0.4 });
+            const matPixel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, flatShading: true });
+            const matOzzy = new THREE.MeshStandardMaterial({ map: texOzzy, roughness: 1.0 });
+            const matPepper = new THREE.MeshStandardMaterial({ map: texPepper, roughness: 1.0 });
+            const matDiamond = new THREE.MeshStandardMaterial({ color: 0xaaffff, transparent: true, opacity: 0.7, roughness: 0.1, metalness: 0.5 });
+            const matVoid = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const matNeon = new THREE.MeshStandardMaterial({ map: this.generateNeonTexture() });
+            const matQuantum = new THREE.MeshStandardMaterial({ map: this.generateQuantumTexture() });
+            const matDemon = new THREE.MeshStandardMaterial({ map: texDemon, roughness: 0.7 });
+            const matChrono = new THREE.MeshStandardMaterial({ map: texChrono, metalness: 0.6, roughness: 0.4 });
+            const matDino = new THREE.MeshStandardMaterial({ map: texDino, roughness: 0.9, metalness: 0.1 });
+            const matWorca = new THREE.MeshStandardMaterial({ map: this.generateWorcaTexture(), roughness: 0.6 });
+
+            const matFire = new THREE.MeshStandardMaterial({ map: this.updateFireTexture(), transparent: true, opacity: 0.95 });
+
+            if (type === 'worm') {
+                for (let i = 0; i < 8; i++) {
+                    const seg = new THREE.Mesh(new THREE.SphereGeometry(0.3 - (i*0.02), 24, 24), matPink);
+                    seg.position.z = -i * 0.4; seg.position.y = 0.3 + Math.sin(i * 0.5) * 0.1; seg.castShadow = true;
+                    pigeonGroup.add(seg);
+                    if (i === 0) {
+                        const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.05), matEye); e1.position.set(0.1, 0.1, 0.25);
+                        const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.05), matEye); e2.position.set(-0.1, 0.1, 0.25);
+                        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), matBeak); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0, 0.3);
+                        seg.add(e1, e2, beak);
+                    }
+                }
+            } else if (type === 'car') {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.5), matGrey); body.position.y = 0.6; body.castShadow = true; pigeonGroup.add(body);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.6), matDarkGrey); head.position.set(0, 1.0, 0.5); head.castShadow = true; pigeonGroup.add(head);
+                const matWheel = new THREE.MeshStandardMaterial({color: 0x111111});
+                [[0.6, 0.25, 0.5], [-0.6, 0.25, 0.5], [0.6, 0.25, -0.5], [-0.6, 0.25, -0.5]].forEach(function(pos) {
+                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.15, 24), matWheel);
+                    wheel.rotation.z = Math.PI / 2; wheel.position.set(pos[0], pos[1], pos[2]); wheel.castShadow = true; pigeonGroup.add(wheel);
+                });
+                const hlMat = new THREE.MeshStandardMaterial({color: 0xffffff});
+                const hl1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), hlMat); hl1.rotation.x = Math.PI/2; hl1.position.set(0.3, 1.0, 0.8);
+                const hl2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), hlMat); hl2.rotation.x = Math.PI/2; hl2.position.set(-0.3, 1.0, 0.8);
+                pigeonGroup.add(hl1, hl2);
+            } else if (type === 'pixel') {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.8), matPixel); body.position.y = 0.6; body.castShadow = true; pigeonGroup.add(body);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), matPixel); head.position.set(0, 1.1, 0.4); head.castShadow = true; pigeonGroup.add(head);
+                const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.1), matEye); eye1.position.set(0.15, 0.05, 0.26);
+                const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.1,0.1), matEye); eye2.position.set(-0.15, 0.05, 0.26);
+                const beak = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.2), matBeak); beak.position.set(0, -0.1, 0.3);
+                head.add(eye1, eye2, beak);
+            } else {
+                let customMat = matGrey;
+                if (['wolf', 'vampire', 'dragon_wolf'].includes(type)) customMat = matDarkGrey;
+                if (type === 'robot') customMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, metalness: 0.8, roughness: 0.2 });
+                if (type === 'ninja') customMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+                if (type === 'golden' || type === 'king') customMat = matGold;
+                if (type === 'ghost') customMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+                if (type === 'alien') customMat = matAlien;
+                if (type === 'astronaut') customMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+                if (type === 'dragon') customMat = matDragon;
+                if (type === 'angel') customMat = matWhite;
+                if (type === 'glitch') customMat = matGlitch;
+                if (['cyborg', 'mecha_dog'].includes(type)) customMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.4 });
+                if (type === 'zombie') customMat = matZombie;
+                if (type === 'diamond') customMat = matDiamond;
+                if (type === 'rainbow') customMat = matRainbow;
+                if (type === 'fire' || type === 'godly_fire') customMat = matFire;
+                if (type === 'ozzy') customMat = matOzzy;
+                if (type === 'pepper') customMat = matPepper;
+                if (type === 'void') customMat = matVoid;
+                if (type === 'neon') customMat = matNeon;
+                if (type === 'quantum' || type === 'space_dog') customMat = matQuantum;
+                if (type === 'demon') customMat = matDemon;
+                if (type === 'time_traveler') customMat = matChrono;
+                if (type === 'dino') customMat = matDino;
+                if (type === 'waffle') customMat = matGrey; 
+                if (type === 'worca') customMat = matWorca;
+
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 24), customMat);
+                body.scale.set(0.9, 1.4, 0.9); body.rotation.x = Math.PI / 2; body.position.y = 0.6; body.castShadow = true;
+                pigeonGroup.add(body);
+
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 24), customMat);
+                head.position.set(0, 1.0, 0.4); head.castShadow = true; pigeonGroup.add(head);
+
+                // Tails
+                const hasTail = ['wolf', 'dragon_wolf', 'ozzy', 'pepper', 'cat', 'mecha_dog', 'space_dog', 'dino', 'worca'];
+                if (hasTail.includes(type)) {
+                    let tailGeo = new THREE.ConeGeometry(0.12, 0.5, 16);
+                    if(type === 'cat') tailGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.6);
+                    if(type === 'ozzy' || type === 'space_dog') tailGeo = new THREE.ConeGeometry(0.18, 0.6, 16); 
+                    if(type === 'dino') { tailGeo = new THREE.ConeGeometry(0.3, 1.2, 16); }
+                    if(type === 'worca') { tailGeo = new THREE.ConeGeometry(0.2, 0.6, 16); }
+                    
+                    const tailMat = (type === 'mecha_dog') ? new THREE.MeshStandardMaterial({color:0x888888, metalness:0.8}) : customMat;
+                    const tail = new THREE.Mesh(tailGeo, tailMat);
+                    tail.position.set(0, type==='dino'?0.4:0.35, type==='dino'?-0.8:-0.6);
+                    tail.geometry.translate(0, type==='dino'?0.6:0.25, 0); 
+                    
+                    if(type !== 'cat') tail.rotation.x = -Math.PI / 3;
+                    else { tail.position.y = 0.5; tail.rotation.x = Math.PI / 4; }
+
+                    if(type === 'worca') {
+                        tail.scale.set(2.0, 0.2, 1.0); // Flat orca tail
+                        tail.rotation.x = -Math.PI / 2.5;
+                    }
+                    
+                    pigeonGroup.add(tail);
+                    pigeonGroup.userData.tail = tail; 
+                }
+
+                // Legs for Worca
+                if(type === 'worca') {
+                    const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.3);
+                    const legMat = matDarkGrey;
+                    const p1 = new THREE.Mesh(legGeo, legMat); p1.position.set(0.2, 0.15, 0.2);
+                    const p2 = new THREE.Mesh(legGeo, legMat); p2.position.set(-0.2, 0.15, 0.2);
+                    const p3 = new THREE.Mesh(legGeo, legMat); p3.position.set(0.2, 0.15, -0.3);
+                    const p4 = new THREE.Mesh(legGeo, legMat); p4.position.set(-0.2, 0.15, -0.3);
+                    pigeonGroup.add(p1, p2, p3, p4);
+
+                    // Fins behind paws
+                    const tinyFin = new THREE.ConeGeometry(0.05, 0.15, 8);
+                    [p1, p2, p3, p4].forEach(p => {
+                        const tf = new THREE.Mesh(tinyFin, matDarkGrey);
+                        tf.position.set(0, 0, -0.08); tf.rotation.x = -Math.PI/4; p.add(tf);
+                    });
+
+                    // Head fin & Back fin
+                    const hFin = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 16), matDarkGrey);
+                    hFin.position.set(0, 0.35, -0.1); hFin.rotation.x = -0.3; head.add(hFin);
+                    const bFin = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 16), matDarkGrey);
+                    bFin.position.set(0, 1.1, -0.1); bFin.rotation.x = -0.5; pigeonGroup.add(bFin);
+                }
+                
+                // Wings
+                const noWings = ['worm', 'car', 'pixel', 'dragon', 'dragon_wolf', 'angel', 'wolf', 'ozzy', 'pepper', 'cat', 'mecha_dog', 'space_dog', 'dino', 'worca', 'super', 'vampire'];
+                if (!noWings.includes(type)) {
+                    const wingGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                    const wingL = new THREE.Mesh(wingGeo, customMat);
+                    wingL.scale.set(0.2, 0.8, 1.2); wingL.position.set(0.45, 0.5, -0.1);
+                    const wingR = new THREE.Mesh(wingGeo, customMat);
+                    wingR.scale.set(0.2, 0.8, 1.2); wingR.position.set(-0.45, 0.5, -0.1);
+                    pigeonGroup.add(wingL, wingR);
+                    pigeonGroup.userData.wingL = wingL; pigeonGroup.userData.wingR = wingR;
+                }
+
+                // Custom Bodies & Details
+                if (type === 'dino') {
+                    body.scale.set(1.3, 2.0, 1.5);
+                    head.scale.set(1.5, 1.5, 1.5);
+                    head.position.set(0, 1.4, 0.6);
+                    this.addFace(head, matEye, matBeak);
+                    // Spikes
+                    const spikeGeo = new THREE.ConeGeometry(0.1, 0.3, 8);
+                    const sMat = new THREE.MeshStandardMaterial({color: 0x166534});
+                    for(let i=0; i<4; i++) {
+                        let spike = new THREE.Mesh(spikeGeo, sMat);
+                        spike.position.set(0, 1.3 - (i*0.3), -0.4 - (i*0.15));
+                        spike.rotation.x = -Math.PI/3;
+                        pigeonGroup.add(spike);
+                    }
+                } else if (type === 'waffle') {
+                    this.addFace(head, matEye, matBeak);
+                    // Waffle
+                    const waffleMat = new THREE.MeshStandardMaterial({color: 0xd97706, roughness:0.8});
+                    const waffle = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16), waffleMat);
+                    waffle.position.y = 0.3; head.add(waffle);
+                    // Ice cream
+                    const icMat = new THREE.MeshStandardMaterial({color: 0xfbcfe8, roughness:0.9});
+                    const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.18), icMat);
+                    scoop.position.y = 0.45; head.add(scoop);
+                } else if (['wolf', 'dragon_wolf'].includes(type)) {
+                    const snout = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 0.3, 16), matDarkGrey); snout.rotation.x = Math.PI / 2; snout.position.set(0, 0, 0.3); head.add(snout);
+                    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); nose.position.set(0, 0, 0.15); snout.add(nose);
+                    const ear1 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 16), matDarkGrey); ear1.position.set(0.2, 0.3, -0.1);
+                    const ear2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 16), matDarkGrey); ear2.position.set(-0.2, 0.3, -0.1);
+                    head.add(ear1, ear2);
+                    if(type === 'dragon_wolf') {
+                        const redEye = new THREE.MeshStandardMaterial({color: 0xff0000}); this.addEyesOnly(head, redEye);
+                    } else this.addEyesOnly(head, matEye);
+                } else if (['ozzy', 'pepper', 'space_dog', 'worca'].includes(type)) {
+                    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.3), customMat); snout.position.set(0, -0.05, 0.35);
+                    if(type === 'worca') snout.material = matDarkGrey;
+                    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), matEye); nose.position.set(0, 0.1, 0.15); snout.add(nose);
+                    head.add(snout);
+                    
+                    if(type !== 'worca') {
+                        const earGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.35, 16);
+                        const earL = new THREE.Mesh(earGeo, customMat); 
+                        earL.position.set(0.28, 0, 0); earL.rotation.z = Math.PI / 4; earL.rotation.x = Math.PI / 8;
+                        const earR = new THREE.Mesh(earGeo, customMat); 
+                        earR.position.set(-0.28, 0, 0); earR.rotation.z = -Math.PI / 4; earR.rotation.x = Math.PI / 8;
+                        head.add(earL, earR);
+                    }
+                    this.addEyesOnly(head, matEye);
+                } else if (type === 'mecha_dog') {
+                    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.3), new THREE.MeshStandardMaterial({color:0x333333})); snout.position.set(0, -0.05, 0.35);
+                    const roboEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.1), new THREE.MeshBasicMaterial({color: 0x00ff00})); roboEye.position.set(0, 0.1, 0.26);
+                    head.add(snout, roboEye);
+                    const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.1), new THREE.MeshStandardMaterial({color:0x888888})); ear1.position.set(0.2, 0.2, 0);
+                    const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.1), new THREE.MeshStandardMaterial({color:0x888888})); ear2.position.set(-0.2, 0.2, 0);
+                    head.add(ear1, ear2);
+                } else if (type === 'robot') {
+                    const roboEye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.1), new THREE.MeshBasicMaterial({color: 0xff0000})); roboEye.position.set(0, 0.1, 0.26);
+                    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), new THREE.MeshStandardMaterial({color: 0x666666, metalness:0.8})); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0, 0.3);
+                    head.add(roboEye, beak);
+                } else if (type === 'cyborg') {
+                    const roboEye = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.1), new THREE.MeshBasicMaterial({color: 0xff0000})); roboEye.position.set(0.12, 0.05, 0.26);
+                    const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye2.position.set(-0.15, 0.05, 0.25);
+                    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), matBeak); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0, 0.3);
+                    head.add(roboEye, eye2, beak);
+                } else if (type === 'alien') {
+                    const bigEye1 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), matEye); bigEye1.scale.set(1, 1.5, 0.5); bigEye1.position.set(0.18, 0.1, 0.2); bigEye1.rotation.z = Math.PI/6;
+                    const bigEye2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), matEye); bigEye2.scale.set(1, 1.5, 0.5); bigEye2.position.set(-0.18, 0.1, 0.2); bigEye2.rotation.z = -Math.PI/6;
+                    head.add(bigEye1, bigEye2);
+                } else if (type === 'zombie') {
+                    const redEye = new THREE.MeshStandardMaterial({color: 0xff0000});
+                    const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), redEye); eye1.position.set(0.15, 0.05, 0.25);
+                    const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), matEye); eye2.position.set(-0.15, 0.05, 0.25);
+                    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 16), matBeak); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0, 0.3);
+                    head.add(eye1, eye2, beak);
+                } else if (type === 'demon') {
+                    const redEye = new THREE.MeshStandardMaterial({color: 0xff0000});
+                    this.addFace(head, redEye, matBeak);
+                    const hornGeo = new THREE.ConeGeometry(0.05, 0.2, 16);
+                    const hornMat = new THREE.MeshStandardMaterial({color:0x000000});
+                    const horn1 = new THREE.Mesh(hornGeo, hornMat); horn1.position.set(0.15, 0.25, 0); horn1.rotation.z = -0.3;
+                    const horn2 = new THREE.Mesh(hornGeo, hornMat); horn2.position.set(-0.15, 0.25, 0); horn2.rotation.z = 0.3;
+                    head.add(horn1, horn2);
+                } else { 
+                    if(type !== 'dino' && type !== 'worca') this.addFace(head, matEye, matBeak); 
+                }
+
+                // FIXES for Capes
+                if (['super', 'vampire'].includes(type)) {
+                    const capeMat = new THREE.MeshStandardMaterial({color: type==='super'?0xef4444:0x111111, side: THREE.DoubleSide});
+                    const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.2), capeMat);
+                    cape.geometry.translate(0, -0.6, 0); // Pivot at top
+                    cape.position.set(0, 1.1, -0.2); // Attach to back of neck
+                    cape.rotation.x = Math.PI / 6;
+                    pigeonGroup.add(cape);
+                    pigeonGroup.userData.cape = cape;
+                }
+
+                // FIXES for Dragon Wings
+                if (['dragon', 'dragon_wolf', 'demon'].includes(type)) {
+                    const wM = new THREE.MeshStandardMaterial({color: type==='demon'?0x111111:0xb91c1c, side: THREE.DoubleSide});
+                    const w1 = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.5), wM); 
+                    w1.geometry.translate(0.4, 0, 0); // Pivot at side
+                    w1.position.set(0.3, 0.7, -0.2); w1.rotation.y = -Math.PI/6;
+                    
+                    const w2 = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.5), wM); 
+                    w2.geometry.translate(-0.4, 0, 0); // Pivot at side
+                    w2.position.set(-0.3, 0.7, -0.2); w2.rotation.y = Math.PI/6;
+                    
+                    pigeonGroup.add(w1, w2);
+                    pigeonGroup.userData.wingL = w1; pigeonGroup.userData.wingR = w2;
+                    pigeonGroup.userData.isDragonWing = true;
+
+                    if(type !== 'demon') {
+                        const hM = new THREE.MeshStandardMaterial({color: 0xfef08a});
+                        const h1 = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 16), hM); h1.position.set(0.15, 0.25, -0.1); h1.rotation.x = -0.5;
+                        const h2 = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 16), hM); h2.position.set(-0.15, 0.25, -0.1); h2.rotation.x = -0.5; head.add(h1, h2);
+                    }
+                }
+
+                if (type === 'pirate') {
+                    const patch = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1), new THREE.MeshBasicMaterial({color: 0x000000})); patch.rotation.x = Math.PI/2; patch.position.set(0.15, 0.05, 0.26);
+                    const strap = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.02, 0.4), new THREE.MeshBasicMaterial({color: 0x000000})); strap.position.set(0, 0.05, 0); head.add(patch, strap);
+                }
+                if (type === 'ninja') { const hb = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.1, 32), new THREE.MeshBasicMaterial({color: 0xff0000})); hb.position.y = 0.1; head.add(hb); }
+                if (type === 'hat') {
+                    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.05, 32), new THREE.MeshStandardMaterial({color: 0x111111})); brim.position.y = 0.25;
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4, 32), new THREE.MeshStandardMaterial({color: 0x111111})); top.position.y = 0.45; head.add(brim, top);
+                }
+                if (type === 'chef') {
+                    const hatB = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 32), new THREE.MeshStandardMaterial({color: 0xffffff})); hatB.position.y = 0.25;
+                    const hatT = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshStandardMaterial({color: 0xffffff})); hatT.position.y = 0.4;
+                    head.add(hatB, hatT);
+                }
+                if (type === 'time_traveler') {
+                    const gMat = new THREE.MeshStandardMaterial({color: 0xffd700, metalness:0.8});
+                    const g1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 16), gMat); g1.rotation.x = Math.PI/2; g1.position.set(0.15, 0.05, 0.28);
+                    const g2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 16), gMat); g2.rotation.x = Math.PI/2; g2.position.set(-0.15, 0.05, 0.28);
+                    const strap = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.05, 32), new THREE.MeshStandardMaterial({color:0x333333})); strap.position.y = 0.05;
+                    head.add(g1, g2, strap);
+                }
+                if (type === 'cool') { const g = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.1), new THREE.MeshStandardMaterial({color: 0x111111})); g.position.set(0, 0.05, 0.26); head.add(g); }
+                if (type === 'cat') {
+                    const e1 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 16), matGrey); e1.position.set(0.2, 0.25, 0);
+                    const e2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 16), matGrey); e2.position.set(-0.2, 0.25, 0); head.add(e1, e2);
+                }
+                if (type === 'wizard') {
+                    const wH = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 32), new THREE.MeshStandardMaterial({color: 0x1e3a8a})); wH.position.y = 0.5; wH.rotation.x = -0.1;
+                    const wB = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.05, 32), new THREE.MeshStandardMaterial({color: 0x1e3a8a})); wB.position.y = 0.15; head.add(wH, wB);
+                }
+                if (type === 'astronaut') {
+                    const h = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 32), new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.5})); head.add(h);
+                    const p = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), new THREE.MeshStandardMaterial({color: 0xdddddd})); p.position.set(0, 0.6, -0.5); pigeonGroup.add(p);
+                }
+                if (type === 'king') { const cr = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.2, 16, 1, true), new THREE.MeshStandardMaterial({color: 0xfacc15, metalness: 1.0, roughness: 0.2})); cr.position.y = 0.3; cr.material.side = THREE.DoubleSide; head.add(cr); }
+                if (type === 'angel') {
+                    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 16, 32), new THREE.MeshBasicMaterial({color: 0xfacc15}));
+                    halo.rotation.x = Math.PI/2; halo.position.y = 0.45; head.add(halo);
+                    const wM = new THREE.MeshStandardMaterial({color: 0xffffff, side: THREE.DoubleSide});
+                    const w1 = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), wM); 
+                    w1.geometry.translate(0.3, 0, 0); w1.position.set(0.2, 0.7, -0.2); w1.rotation.y = -Math.PI/6;
+                    const w2 = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), wM); 
+                    w2.geometry.translate(-0.3, 0, 0); w2.position.set(-0.2, 0.7, -0.2); w2.rotation.y = Math.PI/6;
+                    pigeonGroup.add(w1, w2);
+                    pigeonGroup.userData.wingL = w1; pigeonGroup.userData.wingR = w2; pigeonGroup.userData.isDragonWing = true;
+                }
+                if (type === 'fire' || type === 'godly_fire') {
+                    pigeonGroup.userData.isFire = true;
+                    if(type === 'godly_fire') pigeonGroup.userData.isGodly = true;
+                }
+            }
+            return pigeonGroup;
+        },
+
+        disposeHierarchy: function(node) {
+            node.traverse(function(child) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(function(m){m.dispose()});
+                    else child.material.dispose();
+                }
+            });
+        },
+
+        loadSquad: function(typesArray) {
+            // Cleanup old
+            this.pigeonGroups.forEach(g => {
+                this.scene.remove(g);
+                this.disposeHierarchy(g);
+            });
+            this.pigeonGroups = [];
+
+            // Layout 5 pigeons in a slight arch
+            const count = typesArray.length;
+            const spacing = 1.2;
+            const startX = -((count - 1) * spacing) / 2;
+
+            for(let i=0; i<count; i++) {
+                const type = typesArray[i];
+                const pg = this.createPigeon(type);
+                
+                const posX = startX + (i * spacing);
+                const posZ = 1.0 + Math.abs(posX) * 0.3; // Arch backwards
+
+                pg.position.set(posX, 0, posZ);
+                
+                // Angle slightly towards center
+                pg.rotation.y = Math.PI - (posX * 0.15);
+                
+                this.scene.add(pg);
+                this.pigeonGroups.push(pg);
+            }
+        },
+
+        triggerMineAnimation: function() {
+            this.isAnimatingMine = true; this.mineAnimationProgress = 0;
+            const particleColor = MINES[GAME_STATE.currentMine].crystalColor;
+            const mat = new THREE.MeshBasicMaterial({color: particleColor});
+            for(let i=0; i<8; i++) {
+                const size = Math.random() * 0.1 + 0.05;
+                const p = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), mat);
+                p.position.copy(this.mineBlock.position); p.position.y += 1;
+                p.userData.velocity = new THREE.Vector3((Math.random() - 0.5) * 6, Math.random() * 6 + 2, Math.random() * 6);
+                p.userData.life = 1.0; this.scene.add(p); this.particles.push(p);
+            }
+            this.mineBlock.scale.set(0.9, 0.9, 0.9);
+            setTimeout(function() { engine.mineBlock.scale.set(1,1,1); }, 50);
+        },
+
+        update: function() {
+            const delta = this.clock.getDelta();
+            const time = this.clock.getElapsedTime();
+
+            // Texture updates (Glitch / Fire)
+            if (this.textureCache['glitch']) { this.textureCache['glitch'] = this.generateGlitchTexture(); }
+
+            this.pigeonGroups.forEach(pg => {
+                // Apply glitch specifically if glitch pigeon
+                if (pg.children[0] && pg.children[0].material.map === this.textureCache['glitch']) {
+                    pg.children[0].material.map.needsUpdate = true;
+                }
+
+                if (pg.userData.isFire) {
+                    this.updateFireTexture();
+                    const loops = pg.userData.isGodly ? 3 : 1;
+                    const spread = pg.userData.isGodly ? 1.5 : 0.8;
+                    for(let l=0; l<loops; l++) {
+                        if (Math.random() < 0.3) {
+                            const pMat = new THREE.MeshBasicMaterial({color: ['#ff2200', '#ff8800', '#ffff00'][Math.floor(Math.random()*3)], transparent: true, opacity: 0.8});
+                            const p = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), pMat);
+                            p.position.copy(pg.position);
+                            p.position.x += (Math.random() - 0.5) * spread; p.position.y += Math.random() * 1.0; p.position.z += (Math.random() - 0.5) * spread;
+                            p.userData.velocity = new THREE.Vector3((Math.random() - 0.5), Math.random() * 2 + 1, (Math.random() - 0.5));
+                            p.userData.life = 0.6; p.userData.isFireP = true;
+                            this.scene.add(p); this.particles.push(p);
+                        }
+                    }
+                }
+
+                // Hover & breathing
+                if (!this.isAnimatingMine) {
+                    pg.position.y = Math.sin(time * 2 + pg.position.x) * 0.05;
+                    
+                    // Head bob
+                    if(pg.children[1]) {
+                        pg.children[1].rotation.z = Math.sin(time * 1.5 + pg.position.x) * 0.05;
+                    }
+                }
+
+                // Tails
+                if (pg.userData.tail && !this.isAnimatingMine) {
+                    pg.userData.tail.rotation.z = Math.sin(time * 12 + pg.position.x) * 0.25;
+                }
+
+                // Capes
+                if (pg.userData.cape) {
+                    pg.userData.cape.rotation.x = (Math.PI/6) + Math.sin(time * 3 + pg.position.x) * 0.1;
+                }
+
+                // Wings
+                if (pg.userData.wingL && pg.userData.wingR && !this.isAnimatingMine) {
+                    if (pg.userData.isDragonWing) {
+                        pg.userData.wingL.rotation.y = -Math.PI/6 + Math.sin(time * 8 + pg.position.x) * 0.2;
+                        pg.userData.wingR.rotation.y = Math.PI/6 - Math.sin(time * 8 + pg.position.x) * 0.2;
+                    } else {
+                        pg.userData.wingL.rotation.z = Math.sin(time * 10 + pg.position.x) * 0.15;
+                        pg.userData.wingR.rotation.z = -Math.sin(time * 10 + pg.position.x) * 0.15;
+                    }
+                }
+
+                // Mining Animation
+                const targetZ = 1.0 + Math.abs(pg.position.x) * 0.3; // Base position of the pigeon
+                if (this.isAnimatingMine) {
+                    // Everyone attacks
+                    if (this.mineAnimationProgress < Math.PI) {
+                        pg.rotation.x = Math.sin(this.mineAnimationProgress) * (Math.PI / 6);
+                        pg.position.z = targetZ - Math.sin(this.mineAnimationProgress) * 0.5; // Absolute positioning prevents drifting
+                    } else {
+                        pg.rotation.x = 0; 
+                        pg.position.z = targetZ;
+                    }
+                } else {
+                    // Restore Z position gracefully
+                    pg.position.z += (targetZ - pg.position.z) * 0.1;
+                }
+            });
+
+            if (this.isAnimatingMine) {
+                this.mineAnimationProgress += delta * 15;
+                if (this.mineAnimationProgress >= Math.PI) this.isAnimatingMine = false;
+            }
+
+            // Combo Decay
+            const now = Date.now();
+            if (GAME_STATE.combo > 0 && now - GAME_STATE.lastClickTime > 1500) {
+                GAME_STATE.combo = 0;
+                const cd = document.getElementById('combo-display');
+                cd.style.opacity = 0;
+                cd.classList.remove('combo-pulse');
+            }
+
+            if(!isSpinning && (GAME_STATE.autoSpeed > 0 || GAME_STATE.factoryLevel > 0)) {
+                this.autoTimer = (this.autoTimer || 0) + delta;
+                if (this.autoTimer >= 1.0) {
+                    this.autoTimer = 0;
+                    if (GAME_STATE.autoSpeed > 0) {
+                        const amt = GAME_STATE.autoSpeed * MINES[GAME_STATE.currentMine].multiplier * game.getPigeonMultiplier();
+                        GAME_STATE.diamonds += amt;
+                        this.triggerMineAnimation();
+                        if(document.getElementById('mine-hint').style.display === 'none') {
+                           ui.showFloatingText(window.innerWidth/2, window.innerHeight/2 + 50, `+${ui.formatNumber(amt)} 💎`);
+                        }
+                    }
+                    if (GAME_STATE.factoryLevel > 0) {
+                        const breadGen = GAME_STATE.factoryLevel * 15;
+                        GAME_STATE.bread += breadGen;
+                        ui.showFloatingText(window.innerWidth/2 - 100, 100, `+${ui.formatNumber(breadGen)} 🍞`, false, true);
+                    }
+                    ui.updateStats();
+                }
+            }
+
+            if (this.camera) {
+                this.camera.position.x = Math.sin(time * 0.4) * 8;
+                this.camera.position.z = Math.cos(time * 0.4) * 8;
+                this.camera.lookAt(0, 1, 0);
+            }
+
+            if (this.scene && this.scene.background) {
+                const cycle = (Math.sin(time * 0.05) + 1) / 2;
+                this.scene.background.lerpColors(new THREE.Color(0x0f172a), new THREE.Color(0x87CEEB), cycle);
+                this.scene.fog.color.copy(this.scene.background);
+            }
+
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                const p = this.particles[i];
+                p.position.addScaledVector(p.userData.velocity, delta);
+
+                if(p.userData.isFireP) {
+                    p.scale.multiplyScalar(0.92);
+                } else {
+                    p.userData.velocity.y -= 9.8 * delta;
+                    p.rotation.x += delta * 10; p.rotation.y += delta * 10;
+                }
+
+                p.userData.life -= delta;
+                if (p.userData.life <= 0 || p.position.y < -1) {
+                    if(p.material) p.material.dispose();
+                    if(p.geometry) p.geometry.dispose();
+                    this.scene.remove(p);
+                    this.particles.splice(i, 1);
+                }
+            }
+
+            if (this.mineBlock) this.mineBlock.position.y = Math.sin(time) * 0.1;
+
+            if (this.renderer && this.scene && this.camera) {
+                try {
+                    if(isNaN(this.camera.aspect)) this.onWindowResize();
+                    this.renderer.render(this.scene, this.camera);
+                } catch(e){}
+            }
+        },
+        onWindowResize: function() {
+            if(!this.camera || !this.renderer) return;
+            let w = window.innerWidth || window.screen.width;
+            let h = window.innerHeight || window.screen.height;
+            this.camera.aspect = w / h;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(w, h);
+        }
+    };
+
+    // --- GAME LOGIC ---
+    const game = {
+        saveGame: function() {
+            GAME_STATE.lastSaveTime = Date.now();
+            const saveString = JSON.stringify(GAME_STATE);
+            localStorage.setItem(`pigeonMinerSave_${CURRENT_SLOT}`, saveString);
+            localStorage.setItem('pigeonMinerLastSlot', CURRENT_SLOT.toString());
+
+            if (window.Android && typeof window.Android.saveGameData === 'function') {
+                window.Android.saveGameData(saveString);
+            }
+        },
+
+        loadGame: function(slot = null) {
+            if (slot !== null) CURRENT_SLOT = slot;
+            else { const lastSlot = localStorage.getItem('pigeonMinerLastSlot'); if (lastSlot) CURRENT_SLOT = parseInt(lastSlot); }
+
+            const saved = localStorage.getItem(`pigeonMinerSave_${CURRENT_SLOT}`);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    for(let k in parsed) {
+                        if(parsed.hasOwnProperty(k)) GAME_STATE[k] = parsed[k];
+                    }
+
+                    // MIGRATION for old save formats (Array to Object)
+                    if (GAME_STATE.unlockedPigeons && Array.isArray(GAME_STATE.unlockedPigeons)) {
+                        GAME_STATE.inventory = {};
+                        GAME_STATE.unlockedPigeons.forEach(p => { 
+                            GAME_STATE.inventory[p] = (GAME_STATE.inventory[p] || 0) + 1; 
+                        });
+                        GAME_STATE.equipped = [GAME_STATE.equippedPigeon || 'base'];
+                        delete GAME_STATE.unlockedPigeons;
+                        delete GAME_STATE.equippedPigeon;
+                    }
+
+                    if (GAME_STATE.lastSaveTime) {
+                        const secs = Math.floor((Date.now() - GAME_STATE.lastSaveTime) / 1000);
+                        if (secs > 60) {
+                            let d=0, b=0;
+                            if (GAME_STATE.autoSpeed > 0) { d = secs * GAME_STATE.autoSpeed * MINES[GAME_STATE.currentMine].multiplier * this.getPigeonMultiplier(); GAME_STATE.diamonds += d; }
+                            if (GAME_STATE.factoryLevel > 0) { b = secs * GAME_STATE.factoryLevel * 15; GAME_STATE.bread += b; }
+                            if(d > 0 || b > 0) setTimeout(function() { ui.showOfflineModal(secs, d, b); }, 1000);
+                        }
+                    }
+                } catch (e) { this.resetGame(); }
+            } else { this.resetGame(); }
+        },
+
+        resetGame: function() {
+            GAME_STATE.bread = 0; GAME_STATE.diamonds = 0; GAME_STATE.digSpeed = 1;
+            GAME_STATE.autoSpeed = 0; GAME_STATE.factoryLevel = 0; GAME_STATE.upgradeCost = 1000;
+            GAME_STATE.autoCost = 5000; GAME_STATE.factoryCost = 50000; GAME_STATE.boxCost = 5000;
+            GAME_STATE.currentMine = 0; 
+            GAME_STATE.inventory = { 'base': 1 }; 
+            GAME_STATE.equipped = ['base'];
+            GAME_STATE.sellRate = 2; GAME_STATE.lastSaveTime = null; GAME_STATE.combo = 0;
+        },
+
+        switchSave: function(slot) {
+            this.saveGame(); CURRENT_SLOT = slot; this.resetGame(); this.loadGame(slot);
+            engine.buildMine(GAME_STATE.currentMine); engine.loadSquad(GAME_STATE.equipped);
+            ui.updateStats(); ui.closeModal('modal-saves'); ui.showToast(`Loaded Slot ${slot}`);
+        },
+
+        deleteSave: function(slot, btnElement) {
+            if (btnElement.innerText !== "Sure?") {
+                btnElement.innerText = "Sure?"; btnElement.style.background = "#dc2626";
+                setTimeout(function() { if (btnElement && document.body.contains(btnElement)) { btnElement.innerText = "Delete"; btnElement.style.background = ""; } }, 3000);
+                return;
+            }
+            localStorage.removeItem(`pigeonMinerSave_${slot}`);
+            if (CURRENT_SLOT === slot) { this.resetGame(); engine.buildMine(GAME_STATE.currentMine); engine.loadSquad(GAME_STATE.equipped); ui.updateStats(); }
+            ui.populateSaveModal(); ui.showToast(`Deleted Slot ${slot}`);
+        },
+
+        exportSave: function() {
+            try {
+                GAME_STATE.lastSaveTime = Date.now();
+                const saveData = btoa(JSON.stringify(GAME_STATE));
+
+                const el = document.createElement('textarea');
+                el.value = saveData;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+
+                ui.showToast("Save Code Copied!");
+            } catch (err) {
+                ui.showToast("Export failed.");
+            }
+        },
+
+        importSave: function() {
+            const saveString = prompt("Paste your Save Code here to overwrite your CURRENT slot:");
+            if (saveString) {
+                try {
+                    const decoded = atob(saveString);
+                    const parsed = JSON.parse(decoded);
+                    if (parsed && typeof parsed.bread !== 'undefined') {
+                        for(let k in parsed) {
+                            if(parsed.hasOwnProperty(k)) GAME_STATE[k] = parsed[k];
+                        }
+                        this.saveGame();
+                        engine.buildMine(GAME_STATE.currentMine);
+                        engine.loadSquad(GAME_STATE.equipped);
+                        ui.updateStats();
+                        ui.populateSaveModal();
+                        ui.showToast("Save Imported!");
+                    } else {
+                        ui.showToast("Invalid Save Code!");
+                    }
+                } catch(e) {
+                    ui.showToast("Invalid Save Code!");
+                }
+            }
+        },
+
+        getPigeonMultiplier: function() {
+            let mult = 0;
+            GAME_STATE.equipped.forEach(p => {
+                const rarity = PIGEON_TYPES[p].rarity;
+                mult += RARITY_MULTIPLIERS[rarity];
+            });
+            return mult === 0 ? 1 : mult;
+        },
+
+        mine: function(x, y) {
+            document.getElementById('mine-hint').style.display = 'none';
+            
+            const now = Date.now();
+            if (now - GAME_STATE.lastClickTime < 1000) {
+                GAME_STATE.combo = Math.min(GAME_STATE.combo + 1, 50);
+            } else {
+                GAME_STATE.combo = 1;
+            }
+            GAME_STATE.lastClickTime = now;
+            
+            const comboMult = 1 + (GAME_STATE.combo * 0.05);
+            const pMult = this.getPigeonMultiplier();
+            const isCrit = Math.random() < 0.1;
+            
+            let gained = GAME_STATE.digSpeed * MINES[GAME_STATE.currentMine].multiplier * (isCrit ? 3 : 1) * comboMult * pMult;
+            gained = Math.floor(gained);
+            
+            GAME_STATE.diamonds += gained; 
+            ui.updateStats(); 
+            engine.triggerMineAnimation();
+            
+            ui.updateComboDisplay();
+            ui.showFloatingText(x, y, isCrit ? `CRIT! +${ui.formatNumber(gained)} 💎` : `+${ui.formatNumber(gained)} 💎`, isCrit);
+        },
+
+        sellDiamonds: function() {
+            if (GAME_STATE.diamonds > 0) {
+                const gained = GAME_STATE.diamonds * GAME_STATE.sellRate;
+                GAME_STATE.bread += gained; GAME_STATE.diamonds = 0;
+                ui.updateStats(); ui.showToast(`Sold for ${ui.formatNumber(gained)} 🍞`);
+            } else ui.showToast("No diamonds to sell!");
+        },
+
+        upgradeSpeed: function() {
+            if (GAME_STATE.bread >= GAME_STATE.upgradeCost) {
+                GAME_STATE.bread -= GAME_STATE.upgradeCost; GAME_STATE.digSpeed += 1;
+                GAME_STATE.upgradeCost = Math.floor(GAME_STATE.upgradeCost * 1.8);
+                ui.updateStats();
+            } else ui.showToast("Not enough Bread!");
+        },
+        upgradeAuto: function() {
+            if (GAME_STATE.bread >= GAME_STATE.autoCost) {
+                GAME_STATE.bread -= GAME_STATE.autoCost; GAME_STATE.autoSpeed += 1;
+                GAME_STATE.autoCost = Math.floor(GAME_STATE.autoCost * 2.0);
+                document.getElementById('mine-hint').style.display = 'none'; 
+                ui.updateStats();
+            } else ui.showToast("Not enough Bread!");
+        },
+        upgradeFactory: function() {
+            if (GAME_STATE.bread >= GAME_STATE.factoryCost) {
+                GAME_STATE.bread -= GAME_STATE.factoryCost; GAME_STATE.factoryLevel += 1;
+                GAME_STATE.factoryCost = Math.floor(GAME_STATE.factoryCost * 2.2); 
+                ui.updateStats();
+            } else ui.showToast("Not enough Bread!");
+        },
+        upgradeMine: function() {
+            const nextMine = MINES[GAME_STATE.currentMine + 1];
+            if (nextMine) {
+                if (GAME_STATE.bread >= nextMine.unlockCost) {
+                    GAME_STATE.bread -= nextMine.unlockCost; GAME_STATE.currentMine++;
+                    engine.buildMine(GAME_STATE.currentMine); ui.updateStats(); ui.showToast(`Unlocked ${nextMine.name}!`);
+                } else ui.showToast(`Need ${ui.formatNumber(nextMine.unlockCost)} Bread!`);
+            } else ui.showToast("Max mine reached!");
+        },
+
+        openBoxStore: function() {
+            document.getElementById('store-cost-1').innerText = `${ui.formatNumber(GAME_STATE.boxCost)} 🍞`;
+            document.getElementById('store-cost-10').innerText = `${ui.formatNumber(GAME_STATE.boxCost * 10)} 🍞`;
+            document.getElementById('store-cost-100').innerText = `${ui.formatNumber(GAME_STATE.boxCost * 100)} 🍞`;
+            document.getElementById('store-cost-1k').innerText = `${ui.formatNumber(GAME_STATE.boxCost * 1000)} 🍞`;
+            document.getElementById('store-cost-10k').innerText = `${ui.formatNumber(GAME_STATE.boxCost * 10000)} 🍞`;
+            ui.openModal('modal-box-store');
+        },
+
+        buyCustomBox: function() {
+            let amount = parseInt(document.getElementById('custom-box-amount').value);
+            if(isNaN(amount) || amount <= 0) amount = 1;
+            if(amount > 99999999) amount = 99999999;
+            this.buyBox(amount);
+        },
+
+        buyBox: function(amount) {
+            const totalCost = GAME_STATE.boxCost * amount;
+            if (GAME_STATE.bread >= totalCost && !isSpinning) {
+                GAME_STATE.bread -= totalCost;
+                ui.updateStats();
+                ui.closeModal('modal-box-store');
+
+                if (amount === 1) {
+                    this.executeRoulette();
+                } else {
+                    this.executeMultiBoxes(amount);
+                }
+            } else if(!isSpinning) {
+                ui.showToast("Not enough Bread!");
+            }
+        },
+
+        getRolledPigeon: function(totalWeight) {
+            const roll = Math.random() * totalWeight;
+            let cumulative = 0;
+            for (const key in PIGEON_TYPES) {
+                if (key === 'base') continue;
+                cumulative += PIGEON_TYPES[key].chance;
+                if (roll <= cumulative) return key;
+            }
+            return 'hat';
+        },
+
+        addToInventory: function(type, amount=1) {
+            GAME_STATE.inventory[type] = (GAME_STATE.inventory[type] || 0) + amount;
+        },
+
+        executeRoulette: function() {
+            isSpinning = true;
+            let totalWeight = 0;
+            for(const k in PIGEON_TYPES) if(k!=='base') totalWeight += PIGEON_TYPES[k].chance;
+
+            const wonType = this.getRolledPigeon(totalWeight);
+
+            const strip = document.getElementById('roulette-strip');
+            strip.style.transition = 'none';
+            strip.style.transform = 'translateX(0px)';
+            strip.innerHTML = '';
+
+            const itemWidth = 90;
+            const totalItems = 50;
+            const winIndex = 43;
+
+            const allKeys = Object.keys(PIGEON_TYPES);
+            const validKeys = [];
+            for(let k=0; k<allKeys.length; k++) {
+                if(allKeys[k] !== 'base') validKeys.push(allKeys[k]);
+            }
+
+            for(let i=0; i<totalItems; i++) {
+                let type = wonType;
+                if (i !== winIndex) {
+                     type = validKeys[Math.floor(Math.random() * validKeys.length)];
+                }
+                const data = PIGEON_TYPES[type];
+                const div = document.createElement('div');
+                div.className = `roulette-item`;
+
+                let imgSrc = data.iconUrl ? `<img src="${data.iconUrl}" style="width:60px; height:60px; object-fit:contain; margin-bottom:5px;">` : `<div style="font-size:2rem; margin-bottom:5px;">🐦</div>`;
+                div.innerHTML = `${imgSrc}<div class="${data.color}">${data.name}</div>`;
+                strip.appendChild(div);
+            }
+
+            ui.openModal('modal-roulette');
+
+            requestAnimationFrame(function() {
+                const containerWidth = document.querySelector('.roulette-container').offsetWidth;
+                const targetX = (winIndex * itemWidth) + (itemWidth / 2) - (containerWidth / 2);
+                const randomOffset = (Math.random() - 0.5) * (itemWidth * 0.8);
+                const finalX = targetX + randomOffset;
+
+                strip.offsetHeight;
+
+                strip.style.transition = 'transform 5s cubic-bezier(0.1, 0.9, 0.2, 1)';
+                strip.style.transform = `translateX(-${finalX}px)`;
+
+                setTimeout(function() {
+                    isSpinning = false;
+                    ui.closeModal('modal-roulette');
+                    game.addToInventory(wonType, 1);
+                    ui.showUnlockModalSingle(wonType);
+                }, 5500);
+            });
+        },
+
+        executeMultiBoxes: function(amount) {
+            ui.showToast(`Unboxing ${ui.formatNumber(amount)} Pigeons...`);
+            isSpinning = true;
+
+            let totalWeight = 0;
+            for(const k in PIGEON_TYPES) if(k!=='base') totalWeight += PIGEON_TYPES[k].chance;
+
+            const wonTypes = [];
+
+            if (amount > 10000) {
+                for (const key in PIGEON_TYPES) {
+                    if (key === 'base') continue;
+                    const chance = PIGEON_TYPES[key].chance / totalWeight;
+                    const expected = amount * chance;
+                    const variance = expected * 0.1 * (Math.random() - 0.5);
+                    const actual = Math.floor(expected + variance);
+                    if (actual > 0) {
+                        this.addToInventory(key, actual);
+                        for(let j=0; j<Math.min(actual, 100); j++) wonTypes.push(key);
+                    }
+                }
+            } else {
+                for(let i=0; i<amount; i++) {
+                    const roll = this.getRolledPigeon(totalWeight);
+                    wonTypes.push(roll);
+                    this.addToInventory(roll, 1);
+                }
+            }
+
+            const container = document.getElementById('multi-roulette-grid');
+            container.innerHTML = '';
+
+            const displayLimit = 50;
+            const visualAmount = Math.min(wonTypes.length, displayLimit);
+            let size = visualAmount > 30 ? '35px' : (visualAmount > 10 ? '45px' : '60px');
+            container.style.gridTemplateColumns = `repeat(auto-fit, minmax(${size}, 1fr))`;
+            document.getElementById('multi-roulette-title').innerText = `Unboxing ${ui.formatNumber(amount)}x...`;
+
+            const validKeys = Object.keys(PIGEON_TYPES).filter(function(k){return k !== 'base'});
+            const visualBoxes = [];
+
+            for(let i=0; i<visualAmount; i++) {
+                const box = document.createElement('div');
+                box.style.width = size; box.style.height = size;
+                box.style.background = '#0f172a'; box.style.border = '1px solid #334155';
+                box.style.borderRadius = '6px'; box.style.display = 'flex';
+                box.style.justifyContent = 'center'; box.style.alignItems = 'center';
+
+                const img = document.createElement('img');
+                img.style.width = '80%'; img.style.height = '80%'; img.style.objectFit = 'contain';
+
+                const randStart = validKeys[Math.floor(Math.random() * validKeys.length)];
+                img.src = PIGEON_TYPES[randStart].iconUrl || '';
+
+                box.appendChild(img);
+                container.appendChild(box);
+                visualBoxes.push({ img: img, finalType: wonTypes[i] });
+            }
+
+            if(amount > displayLimit) {
+                document.getElementById('multi-roulette-overflow').innerText = `+${ui.formatNumber(amount - displayLimit)} more opened!`;
+            } else {
+                document.getElementById('multi-roulette-overflow').innerText = ``;
+            }
+
+            ui.openModal('modal-multi-roulette');
+
+            if (amount >= 1000) {
+                setTimeout(function() {
+                    visualBoxes.forEach(function(vb) {
+                        if(PIGEON_TYPES[vb.finalType].iconUrl) {
+                            vb.img.src = PIGEON_TYPES[vb.finalType].iconUrl;
+                            vb.img.style.animation = 'popIn 0.3s forwards';
+                        }
+                    });
+                    setTimeout(function() {
+                        isSpinning = false;
+                        ui.closeModal('modal-multi-roulette');
+                        ui.showUnlockModalMulti(wonTypes, amount);
+                    }, 1500);
+                }, 500);
+                return;
+            }
+
+            let spins = 0;
+            const maxSpins = 20;
+            const spinInterval = setInterval(function() {
+                spins++;
+                visualBoxes.forEach(function(vb) {
+                    const rand = validKeys[Math.floor(Math.random() * validKeys.length)];
+                    if(PIGEON_TYPES[rand].iconUrl) vb.img.src = PIGEON_TYPES[rand].iconUrl;
+                });
+
+                if(spins >= maxSpins) {
+                    clearInterval(spinInterval);
+                    visualBoxes.forEach(function(vb) {
+                        if(PIGEON_TYPES[vb.finalType].iconUrl) {
+                            vb.img.src = PIGEON_TYPES[vb.finalType].iconUrl;
+                            vb.img.style.animation = 'popIn 0.3s forwards';
+                        }
+                    });
+
+                    setTimeout(function() {
+                        isSpinning = false;
+                        ui.closeModal('modal-multi-roulette');
+                        ui.showUnlockModalMulti(wonTypes, amount);
+                    }, 1500);
+                }
+            }, 100);
+        },
+
+        equipSquad: function(type) {
+            const equippedCount = GAME_STATE.equipped.filter(t => t === type).length;
+            const owned = GAME_STATE.inventory[type] || 0;
+            
+            if (equippedCount >= owned) {
+                ui.showToast(`You only own ${owned} of this type!`);
+                return;
+            }
+
+            if (GAME_STATE.equipped.length < 5) {
+                GAME_STATE.equipped.push(type);
+                engine.loadSquad(GAME_STATE.equipped); 
+                ui.populateInventory();
+                ui.updateStats();
+            } else {
+                ui.showToast("Squad full! Unequip a pigeon first.");
+            }
+        },
+
+        unequipSquad: function(index) {
+            GAME_STATE.equipped.splice(index, 1);
+            engine.loadSquad(GAME_STATE.equipped);
+            ui.populateInventory();
+            ui.updateStats();
+        }
+    };
+
+    // --- UI LOGIC ---
+    const ui = {
+        formatNumber: function(num) {
+            return Math.floor(num).toLocaleString();
+        },
+
+        updateStats: function() {
+            document.getElementById('bread-display').innerText = this.formatNumber(GAME_STATE.bread);
+            document.getElementById('diamond-display').innerText = this.formatNumber(GAME_STATE.diamonds);
+
+            document.getElementById('btn-dig').innerText = `${this.formatNumber(GAME_STATE.upgradeCost)} 🍞`;
+            document.getElementById('desc-dig').innerText = `Lvl ${GAME_STATE.digSpeed} (+${this.formatNumber(GAME_STATE.digSpeed)} 💎/tap)`;
+
+            document.getElementById('btn-auto').innerText = `${this.formatNumber(GAME_STATE.autoCost)} 🍞`;
+            document.getElementById('desc-auto').innerText = `Lvl ${GAME_STATE.autoSpeed} (${this.formatNumber(GAME_STATE.autoSpeed)}/sec)`;
+
+            document.getElementById('btn-factory').innerText = `${this.formatNumber(GAME_STATE.factoryCost)} 🍞`;
+            document.getElementById('desc-factory').innerText = `Lvl ${GAME_STATE.factoryLevel} (${this.formatNumber(GAME_STATE.factoryLevel * 15)}/sec)`;
+
+            const nextMine = MINES[GAME_STATE.currentMine + 1];
+            document.getElementById('btn-mine').innerText = nextMine ? `${this.formatNumber(nextMine.unlockCost)} 🍞` : 'MAX';
+            if(!nextMine) document.getElementById('btn-mine').style.background = '#64748b';
+
+            document.getElementById('sell-rate-display').innerText = `Multiplier: x${this.formatNumber(MINES[GAME_STATE.currentMine].multiplier)}`;
+            
+            // Pigeon Power UI
+            document.getElementById('power-display').innerText = `Power: x${game.getPigeonMultiplier()}`;
+        },
+        
+        updateComboDisplay: function() {
+            const cd = document.getElementById('combo-display');
+            if (GAME_STATE.combo > 1) {
+                const mult = 1 + (GAME_STATE.combo * 0.05);
+                cd.innerText = `Combo x${mult.toFixed(2)}`;
+                cd.style.opacity = 1;
+                
+                cd.classList.remove('combo-pulse');
+                void cd.offsetWidth;
+                cd.classList.add('combo-pulse');
+            } else {
+                cd.style.opacity = 0;
+            }
+        },
+
+        showFloatingText: function(x, y, text, isCrit = false, isBread = false) {
+            const el = document.createElement('div');
+            el.className = 'floating-text'; el.innerText = text;
+            if (isCrit) { el.style.color = '#facc15'; el.style.fontSize = '2.5rem'; el.style.textShadow = '0 0 15px rgba(250, 204, 21, 1)'; el.style.zIndex = '10'; }
+            if (isBread) { el.style.color = '#facc15'; }
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(function() { el.remove(); }, 1000);
+        },
+        showToast: function(msg) {
+            const toast = document.getElementById('toast'); toast.innerText = msg; toast.style.opacity = 1;
+            setTimeout(function() { toast.style.opacity = 0; }, 2000);
+        },
+        openModal: function(id) { document.getElementById(id).style.display = 'flex'; },
+        closeModal: function(id) { document.getElementById(id).style.display = 'none'; },
+
+        openInventory: function() { this.populateInventory(); this.openModal('modal-inventory'); },
+        openSaveModal: function() { this.populateSaveModal(); this.openModal('modal-saves'); },
+
+        populateSaveModal: function() {
+            const container = document.getElementById('save-slots-container'); container.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const saved = localStorage.getItem(`pigeonMinerSave_${i}`);
+                const slotDiv = document.createElement('div');
+                slotDiv.style.background = '#334155'; slotDiv.style.padding = '12px'; slotDiv.style.borderRadius = '12px';
+                slotDiv.style.display = 'flex'; slotDiv.style.justifyContent = 'space-between'; slotDiv.style.alignItems = 'center';
+                slotDiv.style.border = (CURRENT_SLOT === i) ? '2px solid #4ade80' : '2px solid #475569';
+
+                let infoHTML = `<div style="text-align: left;">
+                    <div style="font-weight: bold; color: var(--primary);">Save Slot ${i} ${(CURRENT_SLOT === i) ? '(Active)' : ''}</div>
+                    <div style="font-size: 0.8rem; color: #cbd5e1;">Empty</div>
+                </div>`;
+
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        infoHTML = `<div style="text-align: left;">
+                            <div style="font-weight: bold; color: var(--primary);">Save Slot ${i} ${(CURRENT_SLOT === i) ? '(Active)' : ''}</div>
+                            <div style="font-size: 0.8rem; color: #cbd5e1;">🍞 ${ui.formatNumber(data.bread)} | 💎 ${ui.formatNumber(data.diamonds)}</div>
+                        </div>`;
+                    } catch(e) {}
+                }
+
+                const btnDiv = document.createElement('div'); btnDiv.style.display = 'flex'; btnDiv.style.gap = '5px';
+                if (CURRENT_SLOT !== i) {
+                    const loadBtn = document.createElement('button'); loadBtn.innerText = "Load"; loadBtn.style.padding = '8px 12px'; loadBtn.style.fontSize = '0.8rem';
+                    loadBtn.style.borderRadius = '8px'; loadBtn.onclick = function() { game.switchSave(i); }; btnDiv.appendChild(loadBtn);
+                }
+                if (saved) {
+                    const delBtn = document.createElement('button'); delBtn.innerText = "Delete"; delBtn.style.padding = '8px 12px'; delBtn.style.fontSize = '0.8rem';
+                    delBtn.style.borderRadius = '8px'; delBtn.style.borderColor = '#ef4444'; delBtn.onclick = function() { game.deleteSave(i, this); }; btnDiv.appendChild(delBtn);
+                }
+                slotDiv.innerHTML = infoHTML; slotDiv.appendChild(btnDiv); container.appendChild(slotDiv);
+            }
+        },
+
+        populateInventory: function() {
+            // Update Equip Slots
+            const equipContainer = document.getElementById('equip-slots-container');
+            equipContainer.innerHTML = '';
+            for(let i=0; i<5; i++) {
+                const slot = document.createElement('div');
+                const type = GAME_STATE.equipped[i];
+                if(type) {
+                    slot.className = 'equip-slot filled';
+                    if(PIGEON_TYPES[type].iconUrl) {
+                        slot.innerHTML = `<img src="${PIGEON_TYPES[type].iconUrl}">
+                                          <div class="unequip-badge">X</div>`;
+                    }
+                    slot.onclick = () => game.unequipSquad(i);
+                } else {
+                    slot.className = 'equip-slot';
+                }
+                equipContainer.appendChild(slot);
+            }
+
+            // Update Full Grid
+            const grid = document.getElementById('inventory-grid'); grid.innerHTML = '';
+            for (const key in PIGEON_TYPES) {
+                if (key === 'base') continue;
+                const data = PIGEON_TYPES[key]; 
+                const owned = GAME_STATE.inventory[key] || 0;
+                const equippedCount = GAME_STATE.equipped.filter(t => t === key).length;
+                const isUnlocked = owned > 0; 
+                
+                const div = document.createElement('div'); div.className = `inv-item ${isUnlocked ? '' : 'locked'}`;
+                
+                let content = '';
+                if(isUnlocked) {
+                    content += `<div class="qty-badge">x${ui.formatNumber(owned)}</div>`;
+                }
+
+                let imgSrc = data.iconUrl ? `<img src="${data.iconUrl}" style="width:40px; height:40px; object-fit:contain; margin-bottom:5px;">` : `<div style="font-size:2rem; margin-bottom:5px;">🐦</div>`;
+
+                content += `${imgSrc}<div class="${data.color}" style="font-weight:bold">${data.name}</div>`;
+                content += `<div style="font-size:0.65rem; color:#cbd5e1;">x${RARITY_MULTIPLIERS[data.rarity]} Power</div>`;
+                
+                if(equippedCount > 0) {
+                    content += `<div style="color:#4ade80; font-size:0.65rem; margin-top:3px; font-weight:bold">EQUIPPED (${equippedCount})</div>`;
+                }
+                
+                div.innerHTML = content;
+                if (isUnlocked) div.onclick = function() { game.equipSquad(key); };
+                grid.appendChild(div);
+            }
+        },
+
+        showUnlockModalSingle: function(type) {
+            const data = PIGEON_TYPES[type];
+            document.getElementById('unlocked-name').innerText = data.name;
+            document.getElementById('unlocked-name').className = data.color;
+
+            let desc = `You unboxed a ${data.rarity} pigeon!`;
+            if(type === 'glitch') desc = "SYSTEM ERROR! 0.1% GLITCH PIGEON!";
+            else if(data.rarity === 'silent') desc = "UNKNOWN ENTITY! A SILENT PIGEON (0.01%)!";
+            else if(data.rarity === 'secret') desc = "IMPOSSIBLE! A SECRET PIGEON (0.05%)!";
+            else if(data.rarity === 'mythic') desc = "INCREDIBLE! A MYTHIC PIGEON!";
+            else if(data.rarity === 'legendary') desc = "WOW! A Legendary Pigeon!";
+
+            document.getElementById('unlocked-desc').innerText = desc;
+
+            const previewContainer = document.getElementById('preview-single-container');
+            if (data.iconUrl) {
+                previewContainer.innerHTML = `<img src="${data.iconUrl}" class="preview-img-single">`;
+            } else {
+                previewContainer.innerHTML = `<div style="font-size: 5rem; text-align:center;">🐦</div>`;
+            }
+
+            this.openModal('modal-unlocked');
+        },
+
+        showUnlockModalMulti: function(types, amount) {
+            const namesContainer = document.getElementById('unlocked-multi-names');
+            namesContainer.innerHTML = '';
+
+            document.getElementById('unlocked-multi-title-post').innerText = `${ui.formatNumber(amount)}x Pigeons Unlocked!`;
+
+            let counts = {silent:0, secret:0, mythic:0, legendary:0, epic:0, rare:0, common:0};
+            types.forEach(function(t) { counts[PIGEON_TYPES[t].rarity]++; });
+
+            let summaryHTML = `<div style="width:100%; text-align:center; line-height:1.5;">`;
+            if(counts.silent>0) summaryHTML += `<span class="rarity-silent" style="font-size:1.4rem;">SILENT: ${ui.formatNumber(counts.silent)}</span><br>`;
+            if(counts.secret>0) summaryHTML += `<span class="rarity-secret" style="font-size:1.2rem;">SECRET: ${ui.formatNumber(counts.secret)}</span><br>`;
+            if(counts.mythic>0) summaryHTML += `<span class="rarity-mythic">Mythic: ${ui.formatNumber(counts.mythic)}</span><br>`;
+            if(counts.legendary>0) summaryHTML += `<span class="rarity-legendary">Legendary: ${ui.formatNumber(counts.legendary)}</span><br>`;
+            if(counts.epic>0) summaryHTML += `<span class="rarity-epic">Epic: ${ui.formatNumber(counts.epic)}</span><br>`;
+            if(counts.rare>0) summaryHTML += `<span class="rarity-rare">Rare: ${ui.formatNumber(counts.rare)}</span><br>`;
+            if(counts.common>0) summaryHTML += `<span class="rarity-common">Common: ${ui.formatNumber(counts.common)}</span>`;
+            summaryHTML += `</div>`;
+            namesContainer.innerHTML = summaryHTML;
+
+            const previewContainer = document.getElementById('preview-multi-container');
+            previewContainer.innerHTML = '';
+
+            const displayCount = Math.min(types.length, 100); 
+            const displayTypes = types.slice(0, displayCount);
+
+            displayTypes.forEach(function(type) {
+                if(PIGEON_TYPES[type].iconUrl) {
+                    previewContainer.innerHTML += `<img src="${PIGEON_TYPES[type].iconUrl}" style="width:40px; height:40px; object-fit:contain; animation: popIn 0.5s forwards;">`;
+                }
+            });
+
+            if (types.length > displayCount) {
+                previewContainer.innerHTML += `<div style="width:100%; text-align:center; color:#cbd5e1; font-weight:bold; margin-top:10px;">...and ${ui.formatNumber(types.length - displayCount)} more!</div>`;
+            }
+
+            this.openModal('modal-unlocked-multi');
+        },
+
+        showOfflineModal: function(seconds, diamonds, bread) {
+            document.getElementById('offline-stats').innerHTML = `Time Away: ${Math.floor(seconds / 60)} min<br/>Diamonds Mined: +${ui.formatNumber(diamonds)} 💎<br/>Bread Baked: +${ui.formatNumber(bread)} 🍞`;
+            this.openModal('modal-offline');
+        }
+    };
+
+    window.loadGameFromAndroid = function(saveString) {
+        if (saveString && saveString.trim() !== "") {
+            try {
+                const parsed = JSON.parse(saveString);
+                if (parsed && typeof parsed.bread !== 'undefined') {
+                    for(let k in parsed) {
+                        if(parsed.hasOwnProperty(k)) GAME_STATE[k] = parsed[k];
+                    }
+                    if(engine.buildMine) engine.buildMine(GAME_STATE.currentMine);
+                    if(engine.loadSquad) engine.loadSquad(GAME_STATE.equipped);
+                    ui.updateStats();
+
+                    if (GAME_STATE.lastSaveTime) {
+                        const secs = Math.floor((Date.now() - GAME_STATE.lastSaveTime) / 1000);
+                        if (secs > 60) {
+                            let d=0, b=0;
+                            if (GAME_STATE.autoSpeed > 0) { d = secs * GAME_STATE.autoSpeed * MINES[GAME_STATE.currentMine].multiplier * game.getPigeonMultiplier(); GAME_STATE.diamonds += d; }
+                            if (GAME_STATE.factoryLevel > 0) { b = secs * GAME_STATE.factoryLevel * 15; GAME_STATE.bread += b; }
+                            if(d > 0 || b > 0) setTimeout(function() { ui.showOfflineModal(secs, d, b); }, 1000);
+                        }
+                    }
+                    ui.showToast("App Save Loaded!");
+                }
+            } catch(e) { console.error("Android load failed", e); }
+        }
+    };
+
+    function animateLoop() {
+        requestAnimationFrame(animateLoop);
+        try { engine.update(); } catch(e) {}
+    }
+
+    window.onload = function() {
+        game.loadGame();
+        setTimeout(function(){ engine.init(); }, 100); 
+        ui.updateStats();
+
+        setInterval(function() { game.saveGame(); }, 5000);
+    };
+</script>
+</body>
+</html>
